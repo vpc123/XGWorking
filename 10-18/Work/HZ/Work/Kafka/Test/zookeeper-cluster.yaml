@@ -1,0 +1,137 @@
+apiVersion: extensions/v1beta1
+kind: Deployment 
+metadata: 
+  name: zookeeper-1
+spec: 
+  replicas: 1
+  template: 
+    metadata: 
+      labels: 
+        name: zookeeper-1 
+    spec: 
+      containers: 
+        - name: zookeeper-1
+          image: zookeeper 
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: NODE_ID
+            value: "1"
+          - name: NODES
+            value: "0.0.0.0,zookeeper-2,zookeeper-3"
+          ports:
+          - containerPort: 2181
+
+---
+
+apiVersion: extensions/v1beta1 
+kind: Deployment
+metadata:
+  name: zookeeper-2
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: zookeeper-2
+    spec:
+      containers:
+        - name: zookeeper-2
+          image: zookeeper
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: NODE_ID
+            value: "2"
+          - name: NODES
+            value: "zookeeper-1,0.0.0.0,zookeeper-3"
+          ports:
+          - containerPort: 2181
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: zookeeper-3
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: zookeeper-3
+    spec:
+      containers:
+        - name: zookeeper-3
+          image: zookeeper
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: NODE_ID
+            value: "3"
+          - name: NODES
+            value: "zookeeper-1,zookeeper-2,0.0.0.0"
+          ports:
+          - containerPort: 2181
+---
+
+apiVersion: v1 
+kind: Service 
+metadata: 
+  name: zookeeper-1 
+  labels:
+    name: zookeeper-1
+spec: 
+  ports: 
+    - name: client
+      port: 2181
+      protocol: TCP
+    - name: followers
+      port: 2888
+      protocol: TCP
+    - name: election
+      port: 3888
+      protocol: TCP
+  selector: 
+    name: zookeeper-1
+
+---
+
+apiVersion: v1 
+kind: Service 
+metadata: 
+  name: zookeeper-2
+  labels:
+    name: zookeeper-2
+spec: 
+  ports: 
+    - name: client
+      port: 2181
+      protocol: TCP
+    - name: followers
+      port: 2888
+      protocol: TCP
+    - name: election
+      port: 3888
+      protocol: TCP
+  selector: 
+    name: zookeeper-2
+
+---
+
+apiVersion: v1 
+kind: Service 
+metadata: 
+  name: zookeeper-3
+  labels:
+    name: zookeeper-3
+spec: 
+  ports: 
+    - name: client
+      port: 2181
+      protocol: TCP
+    - name: followers
+      port: 2888
+      protocol: TCP
+    - name: election
+      port: 3888
+      protocol: TCP
+  selector: 
+    name: zookeeper-3

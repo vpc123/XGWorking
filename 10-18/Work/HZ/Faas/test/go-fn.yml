@@ -1,0 +1,9 @@
+provider:
+  name: faas
+  gateway: http://192.168.131.10:31112
+
+functions:
+  go-fn:
+    lang: go
+    handler: ./go-fn
+    image: go-fn:latest

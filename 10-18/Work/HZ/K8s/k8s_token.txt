@@ -1,0 +1,1 @@
+kubeadm join 192.168.131.10:6443 --token qx0lxw.fpnlzuj4wsydhdrd --discovery-token-ca-cert-hash sha256:f7c1aa31a4d2bb45d83684916532979795018f3ef495230329bca44bfe4c1d9e

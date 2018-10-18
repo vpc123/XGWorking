@@ -1,0 +1,102 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: redis-app
+spec:
+  serviceName: redis-cluster
+  replicas: 6
+  template:
+    metadata:
+      labels:
+        app: redis
+        appCluster: redis-cluster
+    spec:
+      terminationGracePeriodSeconds: 20
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - redis
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: redis-cluster
+        image: 314315960/redis-peer-finder:4.0.11
+        ports:
+        - containerPort: 6379
+          name: redis
+        - containerPort: 16379
+          name: gossip
+        command:
+        - "/bin/sh"
+        args:
+        - "/etc/redis/bootstrap-pod.sh"
+        readinessProbe:
+          exec:
+            command:
+            - "/bin/sh"
+            - "-c"
+            - "redis-cli -h $(hostname) ping"
+          initialDelaySeconds: 15
+          timeoutSeconds: 15
+        livenessProbe:
+          exec:
+            command:
+            - "/bin/sh"
+            - "-c"
+            - "redis-cli -h $(hostname) ping"
+          initialDelaySeconds: 20
+          periodSeconds: 3
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - name: redis-conf
+          mountPath: /etc/redis
+          readOnly: false
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: false
+        - name: redis-data
+          mountPath: /var/lib/redis
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+      volumes:
+      - name: redis-conf
+        configMap:
+          name: redis-conf
+          items:
+            - key: redis.conf
+              path: redis.conf
+            - key: bootstrap-pod.sh
+              path: bootstrap-pod.sh
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-claim
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations
+            - path: "pod_name"
+              fieldRef:
+                fieldPath: metadata.name
+            - path: "pod_namespace"
+              fieldRef:
+                fieldPath: metadata.namespace
